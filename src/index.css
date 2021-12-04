@@ -11,3 +11,34 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.counter-button {
+  min-width: 35px !important;
+  padding: 0 !important;
+  max-height: 30px !important;
+}
+
+.counter-button.minus {
+  font-size: 58px !important;
+  padding-bottom: 10px !important;
+  margin-right: 20px;
+}
+
+.counter-button.plus {
+  font-size: 37px !important;
+  padding-bottom: 0 !important;
+  margin-left: 20px;
+}
+
+.counter-number {
+  font-size: 50px;
+  font-weight: 900;
+  color: white;
+}
+
+.mint-btn {
+  width: 150px;
+  height: 50px;
+  font-size: 25px !important;
+  font-weight: bold !important;
+}

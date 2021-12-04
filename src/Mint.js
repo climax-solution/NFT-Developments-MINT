@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import styled from "styled-components";
 import { makeStyles, Box, Button, TextField, InputAdornment } from '@material-ui/core';
+import { NotificationManager } from "react-notifications";
 import bigIcon from './img/main.png';
 
 const useStyles = makeStyles({
@@ -47,104 +47,136 @@ const useStyles = makeStyles({
 })
 
 const Mint = () => {
-  const classes = useStyles();
-  const [counter, setCount] = useState(0);
+    const classes = useStyles();
+    const [counter, setCount] = useState(1);
+    const [account, setAccount] = useState('');
+    const [price, setPrice] = useState('');
 
-  const onMint = async () => {
-    
-  };
+    const onMint = async () => {
+        if (!account) {
+            NotificationManager.warning("Metamask is not connected!", "Warning", 1000000 );
+            return;
+        }
+        
+        if (price < 0.1) {
+            NotificationManager.info("NFT price must be greater than 0.1 NFD");
+            return;
+        }
 
-  return (
-    <main>
-      <Box
-        display="flex"
-        justifyContent="center"
-      >
-        <Box
-          maxWidth="500px"
-          width="100%"
-          minHeight="600px"
-          display="flex"
-          pb="30px"
-          justifyContent="space-evenly"
-          flexDirection="column"
-          style={{
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: "translate(-50%, -50%)"
-          }}
-        >
-          <Box
-              display="flex"
-              justifyContent="end"
-              px={4}
-          >
-              <Button variant="contained" color="secondary">Connect Wallet</Button>
-          </Box>
-          <Box
-              display="flex"
-              justifyContent="center"
-              color="white"
-              px={4}
-          >
-              <h2>NFT DEVELOPMENTS</h2>
-          </Box>
+
+    };
+
+    const connectWallet = async () => {
+        // alert();
+        try {
+            const { result } = await window.ethereum.send('eth_requestAccounts');
+            setAccount(result[0]);
+        } catch(err) {
+            console.log(err);
+        }
+    }
+
+    return (
+        <main>
             <Box
-                textAlign="center"
+            display="flex"
+            justifyContent="center"
             >
-              <Box
-                  textAlign="center"
-              >
-                  <img src={bigIcon} className={`${classes['width-200']}`} style={{borderRadius: '4px'}}/>
-              </Box>
+            <Box
+                maxWidth="500px"
+                width="100%"
+                minHeight="600px"
+                display="flex"
+                pb="30px"
+                justifyContent="space-evenly"
+                flexDirection="column"
+                style={{
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: "translate(-50%, -50%)"
+                }}
+            >
                 <Box
                     display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    mt={2}
+                    justifyContent="end"
+                    px={4}
                 >
                     <Button
                         variant="contained"
                         color="secondary"
-                        className="counter-button minus"
-                        onClick={() => counter > 0 && setCount(counter - 1)}
-                    >-</Button>
-                    <span className="counter-number">{counter}</span>
-                    <Button
-                        variant="contained"
+                        onClick={connectWallet}
+                    >{
+                        !account ? 'Connect Wallet'
+                        : account.substr(0, 6) + '...' + account.substr(-4)
+                    } </Button>
+                </Box>
+                <Box
+                    display="flex"
+                    justifyContent="center"
+                    color="white"
+                    px={4}
+                >
+                    <h2>NFT DEVELOPMENTS</h2>
+                </Box>
+                <Box
+                    textAlign="center"
+                >
+                    <Box
+                        textAlign="center"
+                    >
+                        <img src={bigIcon} className={`${classes['width-200']}`} style={{borderRadius: '4px'}}/>
+                    </Box>
+                    <Box
+                        display="flex"
+                        justifyContent="center"
+                        alignItems="center"
+                        mt={2}
+                    >
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            className="counter-button minus"
+                            onClick={() => counter > 1 && setCount(counter - 1)}
+                        >-</Button>
+                        <span className="counter-number">{counter}</span>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            className="counter-button plus"
+                            onClick={() => counter < 100 && setCount(counter + 1)}
+                        >+</Button>
+                    </Box>
+                    <Box>
+                        <TextField
+                        type="number"
+                        variant="outlined"
+                        label="NFT Price(NFTD)"
                         color="secondary"
-                        className="counter-button plus"
-                        onClick={() => counter < 100 && setCount(counter + 1)}
-                    >+</Button>
-              </Box>
-              <Box>
-                  <TextField
-                    type="number"
-                    variant="outlined"
-                    label="NFT Price(NFTD)"
-                    color="secondary"
-                    styles={{ color : '#fff', textAlign: 'right ' }}
-                    focused
-                    inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-                  />
-              </Box>
-              <Box
-                mt={3}
-              >
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        size="large"
-                        className="mint-btn"
-                    >Mint</Button>
-              </Box>
-          </Box>
-        </Box>
-      </Box>
-    </main>
-  );
+                        styles={{ color : '#fff', textAlign: 'right ' }}
+                        focused
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                        value={price}
+                        onChange={ e => setPrice(e.target.value) }
+                        />
+                    </Box>
+                    <Box
+                    mt={3}
+                    >
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            size="large"
+                            className="mint-btn"
+                            onClick={onMint}
+                        >Mint</Button>
+                    </Box>
+                </Box>
+            </Box>
+            </Box>
+        </main>
+    );
 };
 
 export default Mint;

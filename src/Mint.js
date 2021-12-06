@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { makeStyles, Box, Button, TextField, InputAdornment } from '@material-ui/core';
+import { makeStyles, Box, Button, TextField, TextareaAutosize } from '@material-ui/core';
 import { NotificationManager } from "react-notifications";
+import initWeb3 from "./utility/web3Init";
+import ipfs from "./utility/ipfsInit";
+
+import PhotoNFTABI from "./abi/PhotoNFT.json";
+import PhotoMarketplaceABI from "./abi/PhotoMarketplace.json";
 import bigIcon from './img/main.png';
 
 const useStyles = makeStyles({
@@ -43,18 +48,49 @@ const useStyles = makeStyles({
   },
   textWarning: {
     color: '#ffbc00'
+  },
+  'w-45': {
+      width: '45%'
   }
 })
 
+const NFT_address = "0x164B93ED1E7C2E3b6cb59Ea88F944b46F12a05ED";
+const Marketplace_address = "0x79d5066D2a9F3f1b6dA1A6aA69114d21C495C7e4";
+
 const Mint = () => {
     const classes = useStyles();
+    const [web3, setWeb3] = useState('');
+    const [photoNFT, setPhotoNFT] = useState({});
+    const [photoMarketplace, setPhotoMarketplace] = useState({});
     const [counter, setCount] = useState(1);
     const [account, setAccount] = useState('');
+    const [name, setName] = useState('');
     const [price, setPrice] = useState('');
+    const [category, setCategory] = useState('');
+    const [description, setDescription] = useState('');
+    const [imageList, setImageList] = useState('');
+    let cids = [];
+
+    useEffect( async () => {
+        const _web3 = await initWeb3();
+        const _photoNFT = new _web3.eth.Contract(PhotoNFTABI, NFT_address);
+        const _photoMarketplace = new _web3.eth.Contract(PhotoMarketplaceABI, Marketplace_address);
+
+        setWeb3(_web3);
+        setPhotoNFT(_photoNFT);
+        setPhotoMarketplace(_photoMarketplace);
+    },[]);
+
+    useEffect(() => {
+        setImageList([
+            "QmT2sZA1Lz1xMNWK8vSHB86BkppSCjZu14zEnUahGA5Vrj",
+            "QmWGqi5qH2HECcgmA1Nxr6NHfUCUYM1jgyDBqEq9ct25wt"
+        ]);
+    }, [])
 
     const onMint = async () => {
         if (!account) {
-            NotificationManager.warning("Metamask is not connected!", "Warning", 1000000 );
+            NotificationManager.warning("Metamask is not connected!", "Warning");
             return;
         }
         
@@ -63,7 +99,15 @@ const Mint = () => {
             return;
         }
 
+        cids = [];
 
+        const res = await uploadDetails(0);
+        console.log(res);
+        const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
+        const start = minted.events.NFTMinted.returnValues.tokenId;
+        await photoNFT.methods.bulkApprove(Marketplace_address, start - counter, counter).send({from : account});
+        const result = await photoMarketplace.methods.mutipleOpenTrade(start - counter, counter, web3.utils.toWei(price.toString(), 'gwei')).send({ from : account });
+        console.log(result);
     };
 
     const connectWallet = async () => {
@@ -76,6 +120,27 @@ const Mint = () => {
         }
     }
 
+    const uploadDetails = async(idx) => {
+        console.log(idx);
+        if (idx > counter - 1) {
+            return cids;
+        }
+
+        else {
+            const details = {
+                nftName: name,
+                image: imageList[idx],
+                nftDesc: description,
+                category: category
+            }
+            const file = Buffer.from(JSON.stringify(details));
+            const res = await ipfs.files.add(file);
+            cids.push(res[0].hash);
+            idx ++;
+            return uploadDetails(idx);
+        }
+    }
+
     return (
         <main>
             <Box
@@ -85,9 +150,9 @@ const Mint = () => {
             <Box
                 maxWidth="500px"
                 width="100%"
-                minHeight="600px"
+                minHeight="700px"
                 display="flex"
-                pb="30px"
+                p="30px"
                 justifyContent="space-evenly"
                 flexDirection="column"
                 style={{
@@ -148,17 +213,67 @@ const Mint = () => {
                             onClick={() => counter < 100 && setCount(counter + 1)}
                         >+</Button>
                     </Box>
-                    <Box>
+                    <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        mt={3}
+                    >
                         <TextField
-                        type="number"
-                        variant="outlined"
-                        label="NFT Price(NFTD)"
-                        color="secondary"
-                        styles={{ color : '#fff', textAlign: 'right ' }}
-                        focused
-                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-                        value={price}
-                        onChange={ e => setPrice(e.target.value) }
+                            type="text"
+                            variant="outlined"
+                            label="NFT Name"
+                            color="secondary"
+                            styles={{ color : '#fff', textAlign: 'right ' }}
+                            focused
+                            fullWidth
+                            value={name}
+                            onChange={ e => setName(e.target.value) }
+                        />
+                    </Box>
+                    <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        mt={3}
+                    >
+                        <TextField
+                            type="number"
+                            variant="outlined"
+                            label="NFT Price(NFTD)"
+                            color="secondary"
+                            className={classes['w-45']}
+                            value={price}
+                            onChange={ e => setPrice(e.target.value) }
+                            focused
+                        />
+                        <TextField
+                            type="text"
+                            variant="outlined"
+                            label="Category"
+                            color="secondary"
+                            className={classes['w-45']}
+                            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                            value={category}
+                            onChange={ e => setCategory(e.target.value) }
+                            focused
+                        />
+                    </Box>
+                    <Box
+                        m="auto"
+                        mt={3}
+                    >
+                        <TextField
+                            variant="outlined"
+                            label="NFT Description"
+                            color="secondary"
+                            focused
+                            multiline
+                            fullWidth
+                            inputProps={{
+                                inputComponent: TextareaAutosize,
+                                rows: 5
+                            }}
+                            value={description}
+                            onChange={ e => setDescription(e.target.value) }
                         />
                     </Box>
                     <Box

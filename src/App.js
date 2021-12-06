@@ -1,5 +1,5 @@
 import { NotificationContainer } from "react-notifications"
-import Mint from './Mint';
+import Mint from './component/Mint';
 import './App.css';
 import 'react-notifications/lib/notifications.css';
 

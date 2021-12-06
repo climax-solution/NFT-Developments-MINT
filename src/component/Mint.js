@@ -1,53 +1,24 @@
 import { useEffect, useState } from "react";
 import { makeStyles, Box, Button, TextField, TextareaAutosize } from '@material-ui/core';
 import { NotificationManager } from "react-notifications";
-import initWeb3 from "./utility/web3Init";
-import ipfs from "./utility/ipfsInit";
+import initWeb3 from "../utility/web3Init";
+import ipfs from "../utility/ipfsInit";
+import Loading from "./Loading";
 
-import PhotoNFTABI from "./abi/PhotoNFT.json";
-import PhotoMarketplaceABI from "./abi/PhotoMarketplace.json";
-import bigIcon from './img/main.png';
+import PhotoNFTABI from "../abi/PhotoNFT.json";
+import PhotoMarketplaceABI from "../abi/PhotoMarketplace.json";
+import bigIcon from '../img/main.png';
 
 const useStyles = makeStyles({
-  textBold: {
-    fontWeight: 900
-  },
-  d_block: {
-    display: 'block',
-  },
-  'f-12px': {
-    fontSize: '12px'
-  },
   'width-200': {
     width: '200px'
   },
   'f-9px': {
     fontSize: '9px'
   },
-  widthInherit: {
-    width: 'inherit'
-  },
-  'mt-2px': {
-    marginTop: '2px'
-  },
-  maxBtn:{
-    background: '#de9618',
-    padding: 0,
-    color: '#fff'
-  },
-  gradient: {
-    backgroundImage: 'linear-gradient(to right,#358cd4, #b95dcd, #ed9f1f)',
-    color: '#fff'
-  },
   'w-100': {
     width: '100%',
     height: '100%'
-  },
-  textCenter: {
-    textAlign: 'center'
-  },
-  textWarning: {
-    color: '#ffbc00'
   },
   'w-45': {
       width: '45%'
@@ -69,9 +40,11 @@ const Mint = () => {
     const [category, setCategory] = useState('');
     const [description, setDescription] = useState('');
     const [imageList, setImageList] = useState('');
+    const [isLoading, setLoading] = useState(false);
+
     let cids = [];
 
-    useEffect( async () => {
+    useEffect(async() => {
         const _web3 = await initWeb3();
         const _photoNFT = new _web3.eth.Contract(PhotoNFTABI, NFT_address);
         const _photoMarketplace = new _web3.eth.Contract(PhotoMarketplaceABI, Marketplace_address);
@@ -100,14 +73,18 @@ const Mint = () => {
         }
 
         cids = [];
-
-        const res = await uploadDetails(0);
-        console.log(res);
-        const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
-        const start = minted.events.NFTMinted.returnValues.tokenId;
-        await photoNFT.methods.bulkApprove(Marketplace_address, start - counter, counter).send({from : account});
-        const result = await photoMarketplace.methods.mutipleOpenTrade(start - counter, counter, web3.utils.toWei(price.toString(), 'gwei')).send({ from : account });
-        console.log(result);
+        setLoading(true);
+        try {
+            const res = await uploadDetails(0);
+            console.log(res);
+            const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
+            const start = minted.events.NFTMinted.returnValues.tokenId;
+            await photoNFT.methods.bulkApprove(Marketplace_address, start - counter, counter).send({from : account});
+            const result = await photoMarketplace.methods.mutipleOpenTrade(start - counter, counter, web3.utils.toWei(price.toString(), 'gwei')).send({ from : account });
+            setLoading(false);
+        } catch(err) {
+            setLoading(false);
+        }
     };
 
     const connectWallet = async () => {
@@ -143,6 +120,7 @@ const Mint = () => {
 
     return (
         <main>
+            { isLoading && <Loading/> }
             <Box
             display="flex"
             justifyContent="center"
@@ -269,8 +247,8 @@ const Mint = () => {
                             multiline
                             fullWidth
                             inputProps={{
-                                inputComponent: TextareaAutosize,
-                                rows: 5
+                                inputcomponent: TextareaAutosize,
+                                minRows: 5
                             }}
                             value={description}
                             onChange={ e => setDescription(e.target.value) }

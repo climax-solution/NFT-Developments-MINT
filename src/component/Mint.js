@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { makeStyles, Box, Button, TextField, TextareaAutosize } from '@material-ui/core';
+import { makeStyles, Box, Button, TextField, TextareaAutosize, Select, MenuItem, FormControl, InputLabel } from '@material-ui/core';
 import { NotificationManager } from "react-notifications";
 import initWeb3 from "../utility/web3Init";
 import ipfs from "../utility/ipfsInit";
@@ -22,11 +22,14 @@ const useStyles = makeStyles({
   },
   'w-45': {
       width: '45%'
+  },
+  'text-white': {
+      color: '#fff'
   }
 })
 
-const NFT_address = "0x164B93ED1E7C2E3b6cb59Ea88F944b46F12a05ED";
-const Marketplace_address = "0x79d5066D2a9F3f1b6dA1A6aA69114d21C495C7e4";
+const NFT_address = "0x6aA5ceB25E3652441349138E861176e526132BD4";
+const Marketplace_address = "0xcEc1EE1b3654bBa7bBf1c717D68c5C083ac0B7AB";
 
 const Mint = () => {
     const classes = useStyles();
@@ -37,7 +40,7 @@ const Mint = () => {
     const [account, setAccount] = useState('');
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
-    const [category, setCategory] = useState('');
+    const [category, setCategory] = useState('physical');
     const [description, setDescription] = useState('');
     const [imageList, setImageList] = useState('');
     const [isLoading, setLoading] = useState(false);
@@ -80,7 +83,7 @@ const Mint = () => {
             const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
             const start = minted.events.NFTMinted.returnValues.tokenId;
             await photoNFT.methods.bulkApprove(Marketplace_address, start - counter, counter).send({from : account});
-            const result = await photoMarketplace.methods.mutipleOpenTrade(start - counter, counter, web3.utils.toWei(price.toString(), 'gwei')).send({ from : account });
+            const result = await photoMarketplace.methods.mutipleOpenTrade(start - counter, counter, web3.utils.toWei(price.toString(), 'ether')).send({ from : account });
             setLoading(false);
         } catch(err) {
             setLoading(false);
@@ -223,17 +226,27 @@ const Mint = () => {
                             onChange={ e => setPrice(e.target.value) }
                             focused
                         />
-                        <TextField
-                            type="text"
+                        <FormControl
                             variant="outlined"
-                            label="Category"
                             color="secondary"
                             className={classes['w-45']}
-                            inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-                            value={category}
-                            onChange={ e => setCategory(e.target.value) }
+                            
                             focused
-                        />
+                        >
+                            <InputLabel htmlFor="outlined-age-native-simple">Category</InputLabel>
+                            <Select
+                                variant="outlined"
+                                label="Category"
+                                value={category}
+                                onChange={ e => setCategory(e.target.value) }
+                                classes={{
+                                    root: classes['text-white']
+                                }}
+                            >
+                                <MenuItem value="physical">Physical Assets</MenuItem>
+                                <MenuItem value="digital">Digital Assets</MenuItem>
+                            </Select>
+                        </FormControl>
                     </Box>
                     <Box
                         m="auto"

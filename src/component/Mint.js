@@ -7,7 +7,8 @@ import Loading from "./Loading";
 
 import PhotoNFTABI from "../abi/PhotoNFT.json";
 import PhotoMarketplaceABI from "../abi/PhotoMarketplace.json";
-import bigIcon from '../img/main.png';
+import Logo from '../img/logo.png';
+import config from "../config.json";
 
 const useStyles = makeStyles({
   'width-200': {
@@ -28,8 +29,7 @@ const useStyles = makeStyles({
   }
 })
 
-const NFT_address = "0x6aA5ceB25E3652441349138E861176e526132BD4";
-const Marketplace_address = "0xcEc1EE1b3654bBa7bBf1c717D68c5C083ac0B7AB";
+const { NFT_address, Marketplace_address } = config;
 
 const Mint = () => {
     const classes = useStyles();
@@ -42,8 +42,9 @@ const Mint = () => {
     const [price, setPrice] = useState('');
     const [category, setCategory] = useState('physical');
     const [description, setDescription] = useState('');
-    const [imageList, setImageList] = useState('');
+    const [imageList, setImageList] = useState([]);
     const [isLoading, setLoading] = useState(false);
+    const [tmpImage, setTempImage] = useState('');
 
     let cids = [];
 
@@ -57,19 +58,22 @@ const Mint = () => {
         setPhotoMarketplace(_photoMarketplace);
     },[]);
 
-    useEffect(() => {
-        setImageList([
-            "QmT2sZA1Lz1xMNWK8vSHB86BkppSCjZu14zEnUahGA5Vrj",
-            "QmWGqi5qH2HECcgmA1Nxr6NHfUCUYM1jgyDBqEq9ct25wt"
-        ]);
-    }, [])
-
     const onMint = async () => {
         if (!account) {
             NotificationManager.warning("Metamask is not connected!", "Warning");
             return;
         }
         
+        if (!name || price == '' || !description) {
+            NotificationManager.warning("Please input all correctly!", "Warning");
+            return;
+        }
+
+        if (!imageList.length) {
+            NotificationManager.info("No image added!");
+            return;
+        }
+
         if (price < 0.1) {
             NotificationManager.info("NFT price must be greater than 0.1 NFD");
             return;
@@ -91,7 +95,6 @@ const Mint = () => {
     };
 
     const connectWallet = async () => {
-        // alert();
         try {
             const { result } = await window.ethereum.send('eth_requestAccounts');
             setAccount(result[0]);
@@ -121,84 +124,100 @@ const Mint = () => {
         }
     }
 
+    const addImage = () => {
+        if (!tmpImage) {
+            NotificationManager.warning("Input is empty!");
+            return;
+        }
+
+        if (imageList.indexOf(tmpImage) > -1) {
+            NotificationManager.warning("That is existing!");
+            return;
+        }
+
+        setImageList([...imageList, tmpImage]);
+        setTempImage('');
+    }
+
     return (
         <main>
             { isLoading && <Loading/> }
             <Box
-            display="flex"
-            justifyContent="center"
-            >
-            <Box
-                maxWidth="500px"
-                width="100%"
-                minHeight="700px"
                 display="flex"
-                p="30px"
-                justifyContent="space-evenly"
-                flexDirection="column"
-                style={{
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: "translate(-50%, -50%)"
-                }}
+                justifyContent="center"
             >
                 <Box
+                    maxWidth="500px"
+                    width="100%"
+                    minHeight="700px"
                     display="flex"
-                    justifyContent="end"
-                    px={4}
-                >
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        onClick={connectWallet}
-                    >{
-                        !account ? 'Connect Wallet'
-                        : account.substr(0, 6) + '...' + account.substr(-4)
-                    } </Button>
-                </Box>
-                <Box
-                    display="flex"
-                    justifyContent="center"
-                    color="white"
-                    px={4}
-                >
-                    <h2>NFT DEVELOPMENTS</h2>
-                </Box>
-                <Box
-                    textAlign="center"
+                    p="30px"
+                    // justifyContent="space-evenly"
+                    flexDirection="column"
+                    style={{
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: "translate(-50%, -50%)"
+                    }}
                 >
                     <Box
-                        textAlign="center"
+                        display="flex"
+                        justifyContent="end"
+                        px={4}
                     >
-                        <img src={bigIcon} className={`${classes['width-200']}`} style={{borderRadius: '4px'}}/>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            onClick={connectWallet}
+                        >{
+                            !account ? 'Connect Wallet'
+                            : account.substr(0, 6) + '...' + account.substr(-4)
+                        } </Button>
                     </Box>
                     <Box
                         display="flex"
                         justifyContent="center"
-                        alignItems="center"
-                        mt={2}
+                        color="white"
+                        px={4}
                     >
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            className="counter-button minus"
-                            onClick={() => counter > 1 && setCount(counter - 1)}
-                        >-</Button>
-                        <span className="counter-number">{counter}</span>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            className="counter-button plus"
-                            onClick={() => counter < 100 && setCount(counter + 1)}
-                        >+</Button>
+                        <img src={Logo} className="logo"/>
+                    </Box>
+                    <Box
+                        mt={2}
+                        textAlign="center"
+                    >
+                        <span className="image-counter-title">Added Image Number</span><br/>
+                        <span className="counter-number">{imageList.length}</span>
                     </Box>
                     <Box
                         display="flex"
+                        alignItems="center"
                         justifyContent="space-between"
-                        mt={3}
+                        mt={2}
                     >
+                        <TextField
+                            type="text"
+                            variant="outlined"
+                            label="Image Path"
+                            color="secondary"
+                            style={{ color : '#fff', textAlign: 'right ', marginRight: '10px' }}
+                            focused
+                            fullWidth
+                            value={tmpImage}
+                            onChange={ e => setTempImage(e.target.value) }
+                        />
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            size="large"
+                            className="mint-btn"
+                            onClick={addImage}
+                        >ADD</Button>
+                    </Box>
+                    
+                    <Box display="flex" mt={2}>
                         <TextField
                             type="text"
                             variant="outlined"
@@ -214,7 +233,7 @@ const Mint = () => {
                     <Box
                         display="flex"
                         justifyContent="space-between"
-                        mt={3}
+                        mt={2}
                     >
                         <TextField
                             type="number"
@@ -249,8 +268,8 @@ const Mint = () => {
                         </FormControl>
                     </Box>
                     <Box
-                        m="auto"
-                        mt={3}
+                        mt={2}
+                        width="100%"
                     >
                         <TextField
                             variant="outlined"
@@ -267,8 +286,10 @@ const Mint = () => {
                             onChange={ e => setDescription(e.target.value) }
                         />
                     </Box>
+                    
                     <Box
-                    mt={3}
+                        mt={3}
+                        textAlign="center"
                     >
                         <Button
                             variant="contained"
@@ -279,7 +300,6 @@ const Mint = () => {
                         >Mint</Button>
                     </Box>
                 </Box>
-            </Box>
             </Box>
         </main>
     );

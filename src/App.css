@@ -41,3 +41,12 @@ body {
     transform: rotate(360deg);
   }
 }
+
+.image-counter-title {
+  color: #f50057;
+  font-weight: bold;
+}
+
+.logo {
+  width: 200px;
+}

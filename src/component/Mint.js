@@ -83,7 +83,6 @@ const Mint = () => {
         setLoading(true);
         try {
             const res = await uploadDetails(0);
-            console.log(res);
             const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
             const start = minted.events.NFTMinted.returnValues.tokenId;
             await photoNFT.methods.bulkApprove(Marketplace_address, start - counter, counter).send({from : account});
@@ -240,7 +239,7 @@ const Mint = () => {
                         <TextField
                             type="number"
                             variant="outlined"
-                            label="NFT Price(NFTD)"
+                            label="NFT Price(BNB)"
                             color="secondary"
                             className={classes['w-45']}
                             value={price}

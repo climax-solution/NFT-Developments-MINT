@@ -36,7 +36,6 @@ const Mint = () => {
     const [web3, setWeb3] = useState('');
     const [photoNFT, setPhotoNFT] = useState({});
     const [photoMarketplace, setPhotoMarketplace] = useState({});
-    const [counter, setCount] = useState(1);
     const [account, setAccount] = useState('');
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
@@ -45,6 +44,7 @@ const Mint = () => {
     const [imageList, setImageList] = useState([]);
     const [isLoading, setLoading] = useState(false);
     const [tmpImage, setTempImage] = useState('');
+    const [folder, setFolder] = useState('');
 
     let cids = [];
 
@@ -64,7 +64,7 @@ const Mint = () => {
             return;
         }
         
-        if (!name || price == '' || !description) {
+        if (!name || price == '' || !description || !folder) {
             NotificationManager.warning("Please input all correctly!", "Warning");
             return;
         }
@@ -85,8 +85,8 @@ const Mint = () => {
             const res = await uploadDetails(0);
             const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
             const start = minted.events.NFTMinted.returnValues.tokenId;
-            await photoNFT.methods.bulkApprove(Marketplace_address, start - counter, counter).send({from : account});
-            await photoMarketplace.methods.mutipleOpenTrade(start - counter, counter, web3.utils.toWei(price.toString(), 'ether')).send({ from : account });
+            await photoNFT.methods.bulkApprove(Marketplace_address, start - imageList.length, imageList.length).send({from : account});
+            await photoMarketplace.methods.mutipleOpenTrade(start - imageList.length, imageList.length, web3.utils.toWei(price.toString(), 'ether'), folder).send({ from : account });
             NotificationManager.success("Success");
             setLoading(false);
         } catch(err) {
@@ -100,13 +100,11 @@ const Mint = () => {
             const { result } = await window.ethereum.send('eth_requestAccounts');
             setAccount(result[0]);
         } catch(err) {
-            console.log(err);
         }
     }
 
     const uploadDetails = async(idx) => {
-        console.log(idx);
-        if (idx > counter - 1) {
+        if (idx > imageList.length - 1) {
             return cids;
         }
 
@@ -115,7 +113,8 @@ const Mint = () => {
                 nftName: name,
                 image: imageList[idx],
                 nftDesc: description,
-                category: category
+                category: category,
+                folder: folder
             }
             const file = Buffer.from(JSON.stringify(details));
             const res = await ipfs.files.add(file);
@@ -153,14 +152,9 @@ const Mint = () => {
                     minHeight="700px"
                     display="flex"
                     p="30px"
-                    // justifyContent="space-evenly"
                     flexDirection="column"
                     style={{
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: "translate(-50%, -50%)"
+                        backgroundColor: 'rgba(0,0,0,0.5)'
                     }}
                 >
                     <Box
@@ -229,6 +223,19 @@ const Mint = () => {
                             fullWidth
                             value={name}
                             onChange={ e => setName(e.target.value) }
+                        />
+                    </Box>
+                    <Box display="flex" mt={2}>
+                        <TextField
+                            type="text"
+                            variant="outlined"
+                            label="NFT Sub Folder Name"
+                            color="secondary"
+                            styles={{ color : '#fff', textAlign: 'right ' }}
+                            focused
+                            fullWidth
+                            value={folder}
+                            onChange={ e => setFolder(e.target.value) }
                         />
                     </Box>
                     <Box

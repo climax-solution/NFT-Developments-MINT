@@ -59,40 +59,61 @@ const Mint = () => {
     },[]);
 
     const onMint = async () => {
-        if (!account) {
-            NotificationManager.warning("Metamask is not connected!", "Warning");
-            return;
-        }
+        // if (!account) {
+        //     NotificationManager.warning("Metamask is not connected!", "Warning");
+        //     return;
+        // }
         
-        if (!name || price == '' || !description || !folder) {
-            NotificationManager.warning("Please input all correctly!", "Warning");
-            return;
-        }
+        // if (!name || price == '' || !description || !folder) {
+        //     NotificationManager.warning("Please input all correctly!", "Warning");
+        //     return;
+        // }
 
-        if (!imageList.length) {
-            NotificationManager.info("No image added!");
-            return;
-        }
+        // if (!imageList.length) {
+        //     NotificationManager.info("No image added!");
+        //     return;
+        // }
 
-        if (price < 0.1) {
-            NotificationManager.info("NFT price must be greater than 0.1 NFD");
-            return;
-        }
+        // if (price < 0.1) {
+        //     NotificationManager.info("NFT price must be greater than 0.1 NFD");
+        //     return;
+        // }
 
         cids = [];
-        setLoading(true);
-        try {
-            const res = await uploadDetails(0);
-            const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
-            const start = minted.events.NFTMinted.returnValues.tokenId;
-            await photoNFT.methods.bulkApprove(Marketplace_address, start - imageList.length, imageList.length).send({from : account});
-            await photoMarketplace.methods.mutipleOpenTrade(start - imageList.length, imageList.length, web3.utils.toWei(price.toString(), 'ether'), folder).send({ from : account });
-            NotificationManager.success("Success");
-            setLoading(false);
-        } catch(err) {
-            NotificationManager.error("Failed");
-            setLoading(false);
+        // setLoading(true);
+        const details = {
+            nftName: name,
+            image: imageList[0],
+            nftDesc: description,
+            category: category,
+            folder: folder
         }
+        
+        const dir = await ipfs.files.mkdir('/climas');
+        // const ex = await ipfs.files.stat('/climas');
+        // console.log(ex);
+        // const dir = await ipfs.files.ls('/climaxs');
+        // const file = Buffer.from(JSON.stringify(details));
+        // console.log(ipfs);
+        // const res = await ipfs.files.write(
+        //     '/climaxs/qweqweq',
+        //     file,
+        //     {create: true}
+        // );
+        // console.log(res);
+        // try {
+        //     const res = await uploadDetails(0);
+        //     const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
+        //     const start = minted.events.NFTMinted.returnValues.tokenId;
+        //     await photoNFT.methods.bulkApprove(Marketplace_address, start - imageList.length, imageList.length).send({from : account});
+        //     await photoMarketplace.methods.mutipleOpenTrade(start - imageList.length, imageList.length, web3.utils.toWei(price.toString(), 'ether'), folder).send({ from : account });
+        //     NotificationManager.success("Success");
+        //     setLoading(false);
+        // } catch(err) {
+        //     console.log(err);
+        //     NotificationManager.error("Failed");
+        //     setLoading(false);
+        // }
     };
 
     const connectWallet = async () => {

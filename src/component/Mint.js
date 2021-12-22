@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { makeStyles, Box, Button, TextField, TextareaAutosize, Select, MenuItem, FormControl, InputLabel } from '@material-ui/core';
 import { NotificationManager } from "react-notifications";
 import initWeb3 from "../utility/web3Init";
@@ -8,6 +9,8 @@ import Loading from "./Loading";
 import PhotoNFTABI from "../abi/PhotoNFT.json";
 import PhotoMarketplaceABI from "../abi/PhotoMarketplace.json";
 import Logo from '../img/logo.png';
+import plus from '../img/plus.png';
+import minus from '../img/minus.png';
 import config from "../config.json";
 
 const useStyles = makeStyles({
@@ -37,14 +40,12 @@ const Mint = () => {
     const [photoNFT, setPhotoNFT] = useState({});
     const [photoMarketplace, setPhotoMarketplace] = useState({});
     const [account, setAccount] = useState('');
-    const [name, setName] = useState('');
+    const [isLoading, setLoading] = useState(false);
+    const [folderCid, setFolderCid] = useState('');
+    const [folderName, setFolderName] = useState('');
+    const [counter, setCounter] = useState(1);
     const [price, setPrice] = useState('');
     const [category, setCategory] = useState('physical');
-    const [description, setDescription] = useState('');
-    const [imageList, setImageList] = useState([]);
-    const [isLoading, setLoading] = useState(false);
-    const [tmpImage, setTempImage] = useState('');
-    const [folder, setFolder] = useState('');
 
     let cids = [];
 
@@ -52,68 +53,53 @@ const Mint = () => {
         const _web3 = await initWeb3();
         const _photoNFT = new _web3.eth.Contract(PhotoNFTABI, NFT_address);
         const _photoMarketplace = new _web3.eth.Contract(PhotoMarketplaceABI, Marketplace_address);
-
         setWeb3(_web3);
         setPhotoNFT(_photoNFT);
         setPhotoMarketplace(_photoMarketplace);
     },[]);
 
     const onMint = async () => {
-        // if (!account) {
-        //     NotificationManager.warning("Metamask is not connected!", "Warning");
-        //     return;
-        // }
-        
-        // if (!name || price == '' || !description || !folder) {
-        //     NotificationManager.warning("Please input all correctly!", "Warning");
-        //     return;
-        // }
-
-        // if (!imageList.length) {
-        //     NotificationManager.info("No image added!");
-        //     return;
-        // }
-
-        // if (price < 0.1) {
-        //     NotificationManager.info("NFT price must be greater than 0.1 NFD");
-        //     return;
-        // }
-
-        cids = [];
-        // setLoading(true);
-        const details = {
-            nftName: name,
-            image: imageList[0],
-            nftDesc: description,
-            category: category,
-            folder: folder
+        if (!account) {
+            NotificationManager.warning("Metamask is not connected!", "Warning");
+            return;
         }
         
-        const dir = await ipfs.files.mkdir('/climas');
-        // const ex = await ipfs.files.stat('/climas');
-        // console.log(ex);
-        // const dir = await ipfs.files.ls('/climaxs');
-        // const file = Buffer.from(JSON.stringify(details));
-        // console.log(ipfs);
-        // const res = await ipfs.files.write(
-        //     '/climaxs/qweqweq',
-        //     file,
-        //     {create: true}
-        // );
-        // console.log(res);
-        // try {
-        //     const res = await uploadDetails(0);
-        //     const minted = await photoNFT.methods.bulkMint(res).send({ from : account });
-        //     const start = minted.events.NFTMinted.returnValues.tokenId;
-        //     await photoNFT.methods.bulkApprove(Marketplace_address, start - imageList.length, imageList.length).send({from : account});
-        //     await photoMarketplace.methods.mutipleOpenTrade(start - imageList.length, imageList.length, web3.utils.toWei(price.toString(), 'ether'), folder).send({ from : account });
-        //     NotificationManager.success("Success");
-        //     setLoading(false);
-        // } catch(err) {
-        //     console.log(err);
-        //     NotificationManager.error("Failed");
-        //     setLoading(false);
-        // }
+        if (!folderName || !price || !folderCid) {
+            NotificationManager.warning("Please input all correctly!", "Warning");
+            return;
+        }
+
+        if (price < 0.1) {
+            NotificationManager.info("NFT price must be greater than 0.1 NFD");
+            return;
+        }
+
+        let folder;
+
+        try {
+            folder = await ipfs.get(folderCid);
+        } catch(err) {
+            NotificationManager.warning("Incorrect folder path!");
+            return;
+        }
+
+        if (folder.length - 1 < counter) {
+            NotificationManager.warning("Folder has not enough item");
+            return;
+        }
+
+        try {
+            const minted = await photoNFT.methods.bulkMint(folderCid, counter).send({ from : account });
+            const start = minted.events.NFTMinted.returnValues.tokenId;
+            await photoNFT.methods.bulkApprove(Marketplace_address, start - counter, counter).send({from : account});
+            await photoMarketplace.methods.mutipleOpenTrade(start - counter, counter, web3.utils.toWei(price.toString(), 'ether'), folder).send({ from : account });
+            NotificationManager.success("Success");
+            setLoading(false);
+        } catch(err) {
+            console.log(err);
+            NotificationManager.error("Failed");
+            setLoading(false);
+        }
     };
 
     const connectWallet = async () => {
@@ -124,42 +110,6 @@ const Mint = () => {
         }
     }
 
-    const uploadDetails = async(idx) => {
-        if (idx > imageList.length - 1) {
-            return cids;
-        }
-
-        else {
-            const details = {
-                nftName: name,
-                image: imageList[idx],
-                nftDesc: description,
-                category: category,
-                folder: folder
-            }
-            const file = Buffer.from(JSON.stringify(details));
-            const res = await ipfs.files.add(file);
-            cids.push(res[0].hash);
-            idx ++;
-            return uploadDetails(idx);
-        }
-    }
-
-    const addImage = () => {
-        if (!tmpImage) {
-            NotificationManager.warning("Input is empty!");
-            return;
-        }
-
-        if (imageList.indexOf(tmpImage) > -1) {
-            NotificationManager.warning("That is existing!");
-            return;
-        }
-
-        setImageList([...imageList, tmpImage]);
-        setTempImage('');
-    }
-
     return (
         <main>
             { isLoading && <Loading/> }
@@ -168,15 +118,10 @@ const Mint = () => {
                 justifyContent="center"
             >
                 <Box
-                    maxWidth="500px"
-                    width="100%"
-                    minHeight="700px"
                     display="flex"
                     p="30px"
                     flexDirection="column"
-                    style={{
-                        backgroundColor: 'rgba(0,0,0,0.5)'
-                    }}
+                    className="mint-box"
                 >
                     <Box
                         display="flex"
@@ -205,7 +150,23 @@ const Mint = () => {
                         textAlign="center"
                     >
                         <span className="image-counter-title">Added Image Number</span><br/>
-                        <span className="counter-number">{imageList.length}</span>
+                        <Box
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                        >
+                            <img
+                                src={minus}
+                                className="counter-btn"
+                                onClick={() => counter > 1 ? setCounter(counter - 1) : "" }
+                            />
+                            <span className="counter-number">{counter}</span>
+                            <img
+                                src={plus}
+                                className="counter-btn"
+                                onClick={() => counter < 100 ? setCounter(counter + 1) : "" }
+                            />
+                        </Box>
                     </Box>
                     <Box
                         display="flex"
@@ -216,47 +177,27 @@ const Mint = () => {
                         <TextField
                             type="text"
                             variant="outlined"
-                            label="Image Path"
+                            label="Folder Path"
                             color="secondary"
-                            style={{ color : '#fff', textAlign: 'right ', marginRight: '10px' }}
+                            style={{ color : '#fff', textAlign: 'right '}}
                             focused
                             fullWidth
-                            value={tmpImage}
-                            onChange={ e => setTempImage(e.target.value) }
+                            value={folderCid}
+                            onChange={ e => setFolderCid(e.target.value) }
                         />
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            size="large"
-                            className="mint-btn"
-                            onClick={addImage}
-                        >ADD</Button>
                     </Box>
                     
                     <Box display="flex" mt={2}>
                         <TextField
                             type="text"
                             variant="outlined"
-                            label="NFT Name"
+                            label="Sub Folder Name"
                             color="secondary"
                             styles={{ color : '#fff', textAlign: 'right ' }}
                             focused
                             fullWidth
-                            value={name}
-                            onChange={ e => setName(e.target.value) }
-                        />
-                    </Box>
-                    <Box display="flex" mt={2}>
-                        <TextField
-                            type="text"
-                            variant="outlined"
-                            label="NFT Sub Folder Name"
-                            color="secondary"
-                            styles={{ color : '#fff', textAlign: 'right ' }}
-                            focused
-                            fullWidth
-                            value={folder}
-                            onChange={ e => setFolder(e.target.value) }
+                            value={folderName}
+                            onChange={ e => setFolderName(e.target.value) }
                         />
                     </Box>
                     <Box
@@ -296,26 +237,6 @@ const Mint = () => {
                             </Select>
                         </FormControl>
                     </Box>
-                    <Box
-                        mt={2}
-                        width="100%"
-                    >
-                        <TextField
-                            variant="outlined"
-                            label="NFT Description"
-                            color="secondary"
-                            focused
-                            multiline
-                            fullWidth
-                            inputProps={{
-                                inputcomponent: TextareaAutosize,
-                                minRows: 5
-                            }}
-                            value={description}
-                            onChange={ e => setDescription(e.target.value) }
-                        />
-                    </Box>
-                    
                     <Box
                         mt={3}
                         textAlign="center"

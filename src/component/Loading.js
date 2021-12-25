@@ -6,7 +6,7 @@ export default function Loading() {
         <div className="loading-container">
             <AtomSpinner
                 color="white"
-                size="125"
+                size={125}
                 className="loader"
             />
         </div>

@@ -31,9 +31,12 @@ code {
 }
 
 .counter-number {
-  font-size: 50px;
+  font-size: 90px;
   font-weight: 900;
   color: white;
+  margin: 0 20px;
+  width: 150px;
+  max-width: 150px;
 }
 
 .mint-btn {
@@ -41,4 +44,22 @@ code {
   height: 50px;
   font-size: 25px !important;
   font-weight: bold !important;
+}
+
+.counter-btn {
+  width: 48px;
+  cursor: pointer;
+}
+
+.counter-btn:hover {
+  transform: scale(0.9);
+}
+
+.mint-box {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  background-color: rgba(0,0,0,0.5);
 }

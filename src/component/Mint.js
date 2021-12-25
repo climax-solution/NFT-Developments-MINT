@@ -43,7 +43,7 @@ const Mint = () => {
     const [isLoading, setLoading] = useState(false);
     const [folderCid, setFolderCid] = useState('');
     const [folderName, setFolderName] = useState('');
-    const [counter, setCounter] = useState(1);
+    const [counter, setCounter] = useState(0);
     const [price, setPrice] = useState('');
     const [category, setCategory] = useState('physical');
 
@@ -75,24 +75,46 @@ const Mint = () => {
         }
 
         let folder;
+        setLoading(true);
 
         try {
             folder = await ipfs.get(folderCid);
+            if (folder.length == 1) {
+                NotificationManager.warning("Cid is invalid with folder.");
+                setLoading(false);
+                return;
+            }
         } catch(err) {
             NotificationManager.warning("Incorrect folder path!");
+            setLoading(false);
             return;
         }
 
-        if (folder.length - 1 < counter) {
-            NotificationManager.warning("Folder has not enough item");
+        setCounter(folder.length - 1);
+
+        try {
+            const existedFolderList = await photoMarketplace.methods.getFolderList().call();
+            let flag = false;
+            existedFolderList.map(item => {
+                if (item.folder == folderName) flag = true;
+            })
+            if (flag) {
+                NotificationManager.warning("Existing Folder name!");
+                setLoading(false);
+                return;
+            }
+        } catch(err) {
+            setLoading(false);
+            NotificationManager.warning("Folder name check error!");
             return;
         }
 
         try {
-            const minted = await photoNFT.methods.bulkMint(folderCid, counter).send({ from : account });
-            const start = minted.events.NFTMinted.returnValues.tokenId;
-            await photoNFT.methods.bulkApprove(Marketplace_address, start - counter, counter).send({from : account});
-            await photoMarketplace.methods.mutipleOpenTrade(start - counter, counter, web3.utils.toWei(price.toString(), 'ether'), folder).send({ from : account });
+            const minted = await photoNFT.methods.bulkMint(folderCid, folder.length - 1).send({ from : account });
+            const start = Number(minted.events.NFTMinted.returnValues.tokenId);
+            console.log(start, folder.length - 1);
+            await photoNFT.methods.bulkApprove(Marketplace_address, start - folder.length + 1, folder.length - 1).send({from : account});
+            await photoMarketplace.methods.mutipleOpenTrade(start - folder.length + 1, folder.length - 1, web3.utils.toWei(price.toString(), 'ether'), folderName).send({ from : account });
             NotificationManager.success("Success");
             setLoading(false);
         } catch(err) {
@@ -155,17 +177,17 @@ const Mint = () => {
                             alignItems="center"
                             justifyContent="center"
                         >
-                            <img
+                            {/* <img
                                 src={minus}
                                 className="counter-btn"
                                 onClick={() => counter > 1 ? setCounter(counter - 1) : "" }
-                            />
+                            /> */}
                             <span className="counter-number">{counter}</span>
-                            <img
+                            {/* <img
                                 src={plus}
                                 className="counter-btn"
                                 onClick={() => counter < 100 ? setCounter(counter + 1) : "" }
-                            />
+                            /> */}
                         </Box>
                     </Box>
                     <Box

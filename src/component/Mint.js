@@ -113,7 +113,7 @@ const Mint = () => {
             const minted = await photoNFT.methods.bulkMint(folderCid, folder.length - 1).send({ from : account });
             const start = Number(minted.events.NFTMinted.returnValues.tokenId);
             await photoNFT.methods.bulkApprove(Marketplace_address, start - folder.length + 1, folder.length - 1).send({from : account});
-            await photoMarketplace.methods.mutipleOpenTrade(start - folder.length + 1, folder.length - 1, web3.utils.toWei(price.toString(), 'ether'), folderName).send({ from : account });
+            await photoMarketplace.methods.mutipleOpenTrade(start - folder.length + 1, folder.length - 1, web3.utils.toWei(price.toString(), 'ether'), folderName, category).send({ from : account });
             NotificationManager.success("Success");
             setLoading(false);
         } catch(err) {
